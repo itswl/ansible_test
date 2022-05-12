@@ -1,0 +1,134 @@
+## ubuntu 最好初次安装 mysql，或完全卸载 mysql 再安装 
+## 防止意外，先删除 默认 /etc/mysql/ 
+
+- name: Check /etc/mysql exists; if exists,Will stop
+  stat:
+    path: /etc/mysql
+  register: etc_file_status
+
+
+- name: Check /etc/mysql exists; if exists,Will stop
+  fail:
+    msg: "/etc/mysql exists; uninstall mysql and backup data first;"
+  when: etc_file_status.stat.exists == True
+
+- name: Check {{ mysql_package_dir }} exists
+  stat:
+    path: "{{ mysql_package_dir }}"
+  register: file_status
+
+- name: Creates {{ mysql_package_dir }}
+  file:
+    path: "{{ mysql_package_dir }}"
+    state: directory
+  when: file_status.stat.exists == False
+
+
+- name: Unzip deb Source To {{ mysql_package_dir }}/
+  unarchive: src={{ ubuntu_mysql_package_name }}  dest={{ mysql_package_dir }}/
+
+- name: "install 18.04 deb"
+  shell: |
+    dpkg -i {{ mysql_package_dir }}/{{ item }}
+  with_items:
+    - libevent-core-2.1-6_2.1.8-stable-4build1_amd64.deb
+    - libaio1_0.3.110-5ubuntu0.1_amd64.deb
+    - mysql-common_5.8+1.0.4_all.deb
+    - mysql-client-core-5.7_5.7.37-0ubuntu0.18.04.1_amd64.deb
+    - mysql-client-5.7_5.7.37-0ubuntu0.18.04.1_amd64.deb
+    - mysql-server-core-5.7_5.7.37-0ubuntu0.18.04.1_amd64.deb
+    - mysql-server-5.7_5.7.37-0ubuntu0.18.04.1_amd64.deb
+    - mysql-server_5.7.37-0ubuntu0.18.04.1_all.deb
+  when: "'{{ ansible_distribution_version }}'=='18.04'"
+  ignore_errors: true
+
+- name: "install 20.04 deb"
+  shell: |
+    dpkg -i {{ mysql_package_dir }}/{{ item }}
+  with_items:
+    - libevent-core-2.1-6_2.1.8-stable-4build1_amd64.deb
+    - libaio1_0.3.110-5ubuntu0.1_amd64.deb
+    - mysql-common_5.8+1.0.4_all.deb
+    - mysql-client-core-5.7_5.7.37-0ubuntu0.18.04.1_amd64.deb
+    - mysql-client-5.7_5.7.37-0ubuntu0.18.04.1_amd64.deb
+    - mysql-server-core-5.7_5.7.37-0ubuntu0.18.04.1_amd64.deb
+    - mysql-server-5.7_5.7.37-0ubuntu0.18.04.1_amd64.deb
+    - mysql-server_5.7.37-0ubuntu0.18.04.1_all.deb
+  when: "'{{ ansible_distribution_version }}'=='20.04'"
+  ignore_errors: true
+
+- name: stop mysql.service
+  service: name=mysql state=stopped enabled=yes
+  ignore_errors: true
+
+- name: Modify config
+  template: src=my.cnf.j2 dest=/etc/mysql/my.cnf
+
+- name: prepare
+  shell: |
+    ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+    apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+    systemctl restart apparmor
+  ignore_errors: true
+
+- name: cp  ubuntu_mysql.service to  /lib/systemd/system/mysql.service
+  copy: 
+    src: ubuntu_mysql.service
+    dest: /lib/systemd/system/mysql.service
+    mode: 644
+
+- name: daemon-reload
+  systemd : daemon_reload=yes
+
+- name: make sure some file exists
+  shell: |
+    touch /var/lib/mysql-files
+    touch /var/log/mysqld.log
+    chown mysql:mysql /var/lib/mysql-files
+    chown mysql:mysql /var/log/mysqld.log
+
+- name: Check {{ mysql_data_dir }} exists; if exists,Will Only install Mysql
+  stat:
+    path: "{{ mysql_data_dir }}"
+  register: data_file_status
+    
+- name: Creates {{ mysql_data_parent_dir }} 
+  file:
+    path: "{{ mysql_data_parent_dir }}"
+    state: directory
+  when: data_file_status.stat.exists == False
+
+
+- name: "Display Ansible date_time"
+  debug: 
+    msg: "{{ ansible_date_time.date }}"
+  register: currenttime
+  tags: linux
+
+# 如果不存在 {{ mysql_data_dir }},则创建 {{ mysql_data_parent_dir }},并进行改密等操作
+- name: Creates {{ mysql_data_parent_dir }} 
+  file:
+    path: "{{ mysql_data_parent_dir }}/{{ currenttime }}"
+    state: directory
+  when: data_file_status.stat.exists == False
+
+  notify:
+    - Get random password
+    - Set password
+    - Grant Privilege
+    - Cp Database initialize file
+    - Database initialize
+
+- name: Creates {{ mysql_data_parent_dir }} 
+  file:
+    path: "{{ mysql_data_parent_dir }}/{{ currenttime }}"
+    state: absent
+  ignore_errors: true
+
+- name: init databases
+  shell: mysqld --initialize --user=mysql
+  when: data_file_status.stat.exists == False
+
+- name: start mysql.service
+  service: name=mysql state=restarted enabled=yes
+

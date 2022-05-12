@@ -1,0 +1,66 @@
+- hosts: app
+  tasks:
+  - name: Stop edge_computing
+    shell: kill -9 `ps -ef |grep edge_computing.jar |grep -v 'auto'| awk -F ' ' '{print $2}'`
+    ignore_errors: true
+
+  - name: Delete edge_computing
+    file:
+      path: "{{ app_jar_dir }}"
+      state: absent
+    ignore_errors: true
+
+
+- hosts: mysql
+  tasks:
+  - name: Stop and Disable Mysql Service
+    service:
+      name: mysqld
+      state: stopped
+      enabled: false
+    ignore_errors: true 
+
+  - name: Uninstall Mysql
+    package: name="{{ item }}"  state=absent 
+    with_items:
+      - mysql-community-common
+      - mysql-community-libs
+      - mysql-community-client
+      - mysql-community-server
+    ignore_errors: true 
+
+  - name:  Delete Mysql bin file
+    file: 
+      path: "{{ mysql_package_dir }}"    
+      state: absent
+    ignore_errors: true 
+
+  ## 数据库数据，按需删除
+  - name: Step 1 - Delete MySql Data
+    file: 
+      path: "{{ mysql_data_dir }}"    
+      state: absent
+
+
+- hosts: jdk
+  tasks:
+  - name: Delete JDK File 
+    file: 
+      path: "{{ jdk_install_dir }}"    
+      state: absent
+    ignore_errors: true 
+
+  - name: Delete JDK Profile 
+    file: 
+      path: /etc/profile.d/ansible_java.sh    
+      state: absent
+    ignore_errors: true 
+
+
+  - name: Take Effect
+    shell: source /etc/profile
+
+
+
+
+

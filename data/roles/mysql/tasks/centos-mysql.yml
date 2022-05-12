@@ -1,0 +1,76 @@
+## 删除文件
+#- name: Step 0 - Restore
+#  shell: |
+#    systemctl disable mysqld
+#    rm -rf "{{ mysql_data_dir }}"  
+#  ignore_errors: true 
+
+- name: Uninstall the MySQL provided by Centos
+  shell: |
+    rpm -e $(/bin/rpm -qa | grep mysql|xargs) --nodeps
+    rpm -e $(/bin/rpm -qa | grep mariadb|xargs) --nodeps
+  ignore_errors: true 
+
+- name: Check {{ mysql_package_dir }} exists
+  stat:
+    path: "{{ mysql_package_dir }}"
+  register: file_status
+
+
+- name: Creates {{ mysql_package_dir }}
+  file:
+    path: "{{ mysql_package_dir }}"
+    state: directory
+  when: file_status.stat.exists == False
+
+
+- name: Check mysql_package_file exists
+  stat:
+    path: "{{ mysql_package_dir }}/{{ item }}"
+  with_items:
+    - mysql-community-common-5.7.36-1.el7.x86_64.rpm
+    - mysql-community-libs-5.7.36-1.el7.x86_64.rpm
+    - mysql-community-client-5.7.36-1.el7.x86_64.rpm
+    - mysql-community-server-5.7.36-1.el7.x86_64.rpm
+  register: mysql_package_file_status
+
+
+- name: Unzip Rpm Source To {{ mysql_package_dir }}/
+  unarchive: src={{ centos_mysql_package_name }}  dest={{ mysql_package_dir }}/
+  loop: "{{ mysql_package_file_status.results }}"
+  when: item.stat.exists == False      
+
+- name: Check {{ mysql_data_dir }} exists; if exists,Will Only install Mysql
+  stat:
+    path: "{{ mysql_data_dir }}"
+  register: data_file_status
+
+- name: Creates {{ mysql_data_dir }} 
+  file:
+    path: "{{ mysql_data_dir }}"
+    state: directory
+  when: data_file_status.stat.exists == False
+  
+  notify:
+    - Get random password
+    - Set password
+    - Grant Privilege
+    - Cp Database initialize file
+    - Database initialize
+
+- name: Install Mysql
+  package: name={{ mysql_package_dir }}/{{ item }} 
+  with_items:
+    - mysql-community-common-5.7.36-1.el7.x86_64.rpm
+    - mysql-community-libs-5.7.36-1.el7.x86_64.rpm
+    - mysql-community-client-5.7.36-1.el7.x86_64.rpm
+    - mysql-community-server-5.7.36-1.el7.x86_64.rpm
+
+- name: Modify config
+  template: src=my.cnf.j2 dest=/etc/my.cnf
+
+
+- name: Start service
+  service: name=mysqld state=started enabled=yes
+
+

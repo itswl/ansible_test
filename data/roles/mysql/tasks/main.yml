@@ -1,0 +1,9 @@
+- import_tasks: ubuntu-mysql.yml
+  when: 
+  - 'ansible_distribution in ["Ubuntu","Debian"]'
+  - "mysql_install == 'yes'"
+
+- import_tasks: centos-mysql.yml
+  when: 
+  - 'ansible_distribution in ["CentOS","RedHat"]'
+  - "mysql_install == 'yes'"

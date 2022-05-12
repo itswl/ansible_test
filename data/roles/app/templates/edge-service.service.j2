@@ -1,0 +1,15 @@
+[Unit]
+Description=edge-service
+Wants=network-online.target
+After=network.target
+
+[Service]
+Type=forking
+WorkingDirectory={{ app_dir }}
+ExecStart=/bin/bash edge-service-systemed.sh start
+ExecStop=/bin/bash edge-service-systemed.sh stop
+ExecReload=/bin/bash edge-service-systemed.sh restart
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

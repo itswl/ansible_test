@@ -1,0 +1,11 @@
+server {
+    listen 8089;
+    server_name localhost;
+    root {{ app_frontend }};
+    index index.js index.html index.htm;
+
+    location ~ .*\.(htm|html)?$ {
+      add_header Cache-Control "private, no-store, no-cache, must-revalidate, proxy-revalidate";
+      access_log on;
+    }
+}

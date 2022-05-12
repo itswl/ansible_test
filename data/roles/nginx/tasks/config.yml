@@ -1,0 +1,14 @@
+- name: Create {{ app_frontend }} directory
+  file: path={{ app_frontend }} state=directory 
+
+- name: Nginx conf
+  copy: src=nginx.conf dest=/etc/nginx/nginx.conf
+
+- name: Computing conf
+  template: src=edge-computing.conf.j2 dest=/etc/nginx/conf.d/edge-computing.conf
+
+- name: Copy bap front package
+  unarchive: src=frontend.tar.gz dest={{ app_frontend }}
+
+- name: Start nginx server
+  service: name=nginx state=restarted enabled=yes

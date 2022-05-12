@@ -1,0 +1,67 @@
+#!/bin/bash
+source /etc/profile
+APP_NAME={{ app_package_name }}
+script_abs=$(readlink -f "$0") # 获取当前脚本绝对路径
+script_dir=$(dirname $script_abs) # 获取当前脚本所在的绝对目录
+script_name=${script_abs##*/}
+cd $script_dir
+
+usage() {
+  echo "Usage: bash $script_abs [start|stop|restart|status]"
+  exit 1
+}
+  
+
+is_exist(){
+  pid=`ps -ef|grep ${APP_NAME}|grep -v grep |grep -v "$script_name"|awk '{print $2}' `   
+  if [ -z "${pid}" ]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+start(){
+  nohup ${script_dir}/${APP_NAME} --spring.profiles.active=box --spring.datasource.url=jdbc:mysql://{{ mysql_address }}:{{ mysql_port }}/cvm?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8 &
+}
+
+stop(){
+  is_exist
+  if [ $? -eq "0" ]; then
+    kill -9 $pid
+  else
+    echo "${APP_NAME} is not running"
+fi  
+}
+
+status(){
+  is_exist
+  if [ $? -eq "0" ]; then
+    echo "${APP_NAME} is running. Pid is ${pid}"
+  else
+    echo "${APP_NAME} is NOT running."
+fi
+}
+
+restart(){
+  stop
+  start
+}
+
+case "$1" in
+"start")
+ start
+ ;;
+"stop")
+ stop
+ ;;
+"status")
+ status
+ ;;
+"restart")
+ restart
+ ;;
+*)
+ usage
+ ;;
+esac

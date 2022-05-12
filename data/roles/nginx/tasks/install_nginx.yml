@@ -1,0 +1,33 @@
+# - name: Add nginx user
+#   user: name=nginx group=nginx system=yes shell=/sbin/nologin state=present
+
+- name: Creates {{ nginx_package_dir }} 
+  file:
+    path: "{{ nginx_package_dir }}"
+    state: directory
+
+- name: Copy Rpm  To {{ nginx_package_dir }}/
+  copy: src={{ centos_nginx_package_name }}  dest={{ nginx_package_dir }}/
+  when: 'ansible_distribution in ["CentOS","RedHat"]'
+
+- name: Copy deb  To {{ nginx_package_dir }}/
+  copy: src={{ ubuntu_nginx_package_name }}  dest={{ nginx_package_dir }}/
+  when: 'ansible_distribution in ["Ubuntu","Debian"]'   
+
+- name: Install Nginx RPM
+  package: name={{ nginx_package_dir }}/{{ item }} 
+  with_items:
+    - "{{ centos_nginx_package_name }}"
+  when: 'ansible_distribution in ["CentOS","RedHat"]'
+
+- name: Install Nginx deb
+  shell: |
+    dpkg -i {{ nginx_package_dir }}/{{ item }} 
+  with_items:
+    - "{{ ubuntu_nginx_package_name }}"
+  when: 'ansible_distribution in ["Ubuntu","Debian"]' 
+
+- name: Start service
+  service: name=nginx state=started enabled=yes
+
+

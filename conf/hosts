@@ -1,0 +1,52 @@
+[jdk]
+192.168.2.84
+192.168.2.85
+192.168.2.86
+
+[mysql]
+192.168.2.84
+192.168.2.85
+192.168.2.86
+
+[nginx]
+192.168.2.84
+192.168.2.85
+192.168.2.86
+
+[app]
+192.168.2.84
+192.168.2.85
+192.168.2.86
+
+[mysql:vars]
+mysql_address=127.0.0.1
+mysql_port=3306
+mysql_install="yes"  # 改为 "no" 不安装 MySQL,按需修改上面的配置
+
+# mysql_install="yes"  # 改为 yes 后 按需修改下面配置
+mysql_passwd=Zetyun_2021
+mysql_data_parent_dir=/mnt/data/
+# mysql 数据保存路径
+mysql_data_dir=/mnt/data/mysql
+mysql_package_dir=/opt/mysql
+centos_mysql_package_name=Mysql-CentOS7-5.7.36-x64.tar.gz
+ubuntu_mysql_package_name=Mysql-Ubuntu-5.7.36-x64.tar.gz
+
+[jdk:vars]
+jdk_install="no"  # 改为 yes 后 按需修改下面配置
+
+jdk_install_dir=/opt/java
+java_package_name=openjdk-17.0.2_linux-x64_bin.tar.gz
+# 解压后的文件夹名，以安装包解压后为准 # 注释写在 同一行也会被识别到变量中
+java_dir_name=jdk-17.0.2
+
+
+[nginx:vars]
+nginx_package_dir=/opt/nginx
+centos_nginx_package_name=nginx-1.20.2-1.el7.ngx.x86_64.rpm
+ubuntu_nginx_package_name=nginx_1.20.2-1_amd64.deb
+
+[app:vars]
+app_dir=/opt/edge_computing
+app_package_name=edge-service
+app_frontend=/opt/edge_computing/frontend/

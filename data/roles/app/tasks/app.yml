@@ -1,0 +1,35 @@
+- name: Creates  {{ app_dir }}
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+
+- name: Copy sh file
+  template: src=edge-service.sh.j2 dest={{ app_dir }}/edge-service.sh mode=775
+
+- name: Copy {{ app_package_name }} to {{ app_dir }}
+  copy: 
+    src: "{{ app_package_name }}"
+    dest: "{{ app_dir }}"
+    mode: 775
+
+# - name: Start edge computing service with log
+#   shell: |
+#     nohup bash {{ app_dir }}/edge-service.sh restart > {{ app_dir }}/app.log 2>&1 &
+
+# - name: Start edge computing service
+#   shell: |
+#     bash {{ app_dir }}/edge-service.sh restart
+
+
+# - name: Automatic start
+#   shell: |
+#     (crontab -l|grep -v edge-service.sh;echo "@reboot /bin/bash {{ app_dir }}/edge-service.sh start")| crontab
+
+- name: Copy systemed.sh file
+  template: src=edge-service-systemed.sh.j2 dest={{ app_dir }}/edge-service-systemed.sh mode=775
+
+- name: Copy edge-service-systemed.service
+  template: src=edge-service.service.j2 dest=/lib/systemd/system/edge-service.service mode=775
+
+- name: Automatic start
+  service: name=edge-service state=started enabled=yes
